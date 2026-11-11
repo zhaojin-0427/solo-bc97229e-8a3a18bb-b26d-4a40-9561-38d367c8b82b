@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}入库接收服务{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">🗄 水文入库接收服务</a>
+  <span class="subtitle">SQLite 整批原子入库 · 幂等回执</span>
+  <nav class="topnav">
+    <a href="{{ url_for('index') }}">已收批次</a>
+    <a href="{{ url_for('api_batches') }}">批次 API</a>
+  </nav>
+</header>
+<main class="container">
+{% block body %}{% endblock %}
+</main>
+<footer class="footer">
+  接收端数据存储于独立 SQLite 文件，容器重启后保留
+</footer>
+</body>
+</html>

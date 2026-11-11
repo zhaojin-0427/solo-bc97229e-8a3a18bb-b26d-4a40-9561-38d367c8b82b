@@ -1,10 +1,41 @@
 services:
+  # 本地 SQLite 入库接收服务（采集端的下游）
+  receiver:
+    build: .
+    image: hydro-table-collector:1.0
+    container_name: hydro-ingest-receiver
+    command: ["python", "-m", "app.receiver"]
+    environment:
+      RECEIVER_DB: /app/data/receiver.db
+      RECEIVER_PORT: "9000"
+    ports:
+      - "9001:9000"          # 接收端自己的状态/演示页面
+    volumes:
+      - receiver-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/api/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   hydro-collector:
     build: .
     image: hydro-table-collector:1.0
     container_name: hydro-table-collector
+    environment:
+      COLLECTOR_DB: /app/data/collector.db
+      RECEIVER_URL: http://receiver:9000
+      RECEIVER_PUBLIC_URL: http://localhost:9001
+      RECEIVER_TIMEOUT: "10"
     ports:
       - "8000:8000"
+    volumes:
+      - collector-data:/app/data
+    depends_on:
+      receiver:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=5)"]
@@ -12,3 +43,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 8s
+
+volumes:
+  collector-data:
+  receiver-data:

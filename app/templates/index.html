@@ -24,6 +24,14 @@
       </form>
     </li>
     <li>
+      <strong>备用示例：</strong>结构与标准示例相同、观测数值不同，用于在“入库后断开连接”演示中产生一个<strong>新批次</strong>。
+      <form action="{{ url_for('fetch') }}" method="post">
+        <input type="hidden" name="url" value="{{ sample_alt_url }}">
+        <button type="submit" class="btn">使用备用示例页</button>
+        <a class="btn ghost" href="{{ sample_alt_url }}" target="_blank" rel="noopener">新窗口查看</a>
+      </form>
+    </li>
+    <li>
       <strong>错误示例：</strong>含跨表头/正文 rowspan、正文非法 colspan 的公示页，用于演示报错定位。
       <form action="{{ url_for('fetch') }}" method="post">
         <input type="hidden" name="url" value="{{ sample_error_url }}">

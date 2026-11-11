@@ -1,0 +1,58 @@
+{% extends "receiver_base.html" %}
+{% block body %}
+<section class="card">
+  <h2>已收批次</h2>
+  <p class="hint">
+    采集端通过 <code>POST /api/batches</code> 整批提交；同批次号同内容
+    返回原回执，同批次号不同内容返回 409。
+  </p>
+  <div class="stat-row">
+    <div class="stat"><span class="num">{{ batch_count }}</span><span class="lbl">已收批次</span></div>
+    <div class="stat"><span class="num">{{ record_count }}</span><span class="lbl">已收记录</span></div>
+  </div>
+
+  <div class="mini-scroll">
+    <table class="result-table">
+      <thead>
+      <tr><th>批次号</th><th>记录数</th><th>回执号</th><th>入库时间</th><th>详情</th></tr>
+      </thead>
+      <tbody>
+      {% for b in batches %}
+      <tr>
+        <td><code title="{{ b.batch_id }}">{{ b.batch_id[:22] }}…</code></td>
+        <td>{{ b.record_count }}</td>
+        <td><code>{{ b.receipt_id }}</code></td>
+        <td>{{ b.received_at }}</td>
+        <td><a class="btn small" href="{{ url_for('api_batch_detail', batch_id=b.batch_id) }}">JSON</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">尚未收到批次。</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>一次性演示开关：入库后断开连接</h2>
+  <p class="hint">
+    开启后，下一次<strong>新批次</strong>提交事务并落库后，服务会在返回回执前
+    强制断开 TCP 连接。采集端因此保持「未确认」；重试同一批次时，
+    因批次号与内容未变，本服务会返回首次入库的原回执。
+  </p>
+  <div class="demo-row">
+    <span class="badge {{ 'armed' if demo.disconnect_next else 'idle' }}">
+      {% if demo.disconnect_next %}已开启（等待下一次入库）{% else %}未开启{% endif %}
+    </span>
+    {% if demo.disconnect_last_at %}
+    <span class="hint">上次触发：{{ demo.disconnect_last_at }}</span>
+    {% endif %}
+    <form action="{{ url_for('demo_disconnect_next_form') }}" method="post" class="inline-form">
+      <input type="hidden" name="enabled" value="{{ '0' if demo.disconnect_next else '1' }}">
+      <button type="submit" class="btn primary">
+        {% if demo.disconnect_next %}关闭开关{% else %}开启一次性开关{% endif %}
+      </button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -50,7 +50,17 @@
 
   <div class="table-actions">
     <a class="btn primary" href="{{ url_for('download', key=result_key) }}">⬇ 下载 CSV（UTF-8 BOM）</a>
+    <form action="{{ url_for('deliver') }}" method="post" class="inline-form">
+      <input type="hidden" name="result_key" value="{{ result_key }}">
+      <button type="submit" class="btn primary">📤 发送入库（冻结全部 {{ records|length }} 条记录）</button>
+    </form>
+    <a class="btn ghost" href="{{ url_for('deliveries') }}">查看入库发送记录</a>
     <a class="btn ghost" href="{{ url_for('index') }}">← 采集新页面</a>
   </div>
+  <p class="hint">
+    发送入库会把本次转换的<strong>全部记录</strong>冻结为持久批次；
+    同一转换结果重复/并发提交只会建立一个批次。批次号由内容指纹派生，
+    重试始终复用原批次号与原内容。
+  </p>
 </section>
 {% endblock %}

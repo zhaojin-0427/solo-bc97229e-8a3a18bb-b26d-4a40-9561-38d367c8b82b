@@ -10,6 +10,10 @@
 <header class="topbar">
   <a class="brand" href="{{ url_for('index') }}">💧 水库公示表格采集</a>
   <span class="subtitle">合并单元格 → 可入库观测记录</span>
+  <nav class="topnav">
+    <a href="{{ url_for('index') }}">采集</a>
+    <a href="{{ url_for('deliveries') }}">入库发送记录</a>
+  </nav>
 </header>
 <main class="container">
 {% block body %}{% endblock %}

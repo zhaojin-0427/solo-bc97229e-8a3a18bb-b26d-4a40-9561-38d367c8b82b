@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}批次详情 · 水库公示表格采集{% endblock %}
+{% block body %}
+<section class="card">
+  <h2>批次详情</h2>
+  <p class="hint">
+    <a href="{{ url_for('deliveries') }}">← 返回入库发送记录</a>
+  </p>
+
+  <div class="stat-row">
+    <div class="stat"><span class="num">{{ batch.record_count }}</span><span class="lbl">冻结记录数</span></div>
+    <div class="stat"><span class="num">{{ batch.attempts }}</span><span class="lbl">发送尝试</span></div>
+    <div class="stat"><span class="num">{{ batch.status }}</span><span class="lbl">状态码</span></div>
+  </div>
+
+  <table class="kv-table">
+    <tr><th>批次号</th><td><code class="wrap">{{ batch.batch_id }}</code></td></tr>
+    <tr><th>内容指纹</th><td><code class="wrap">{{ batch.content_hash }}</code></td></tr>
+    <tr><th>状态</th><td><span class="badge {{ batch.status }}">{{ status_label(batch.status) }}</span></td></tr>
+    <tr><th>来源页</th><td><a href="{{ batch.source_url }}" target="_blank" rel="noopener" class="src-url">{{ batch.source_url }}</a></td></tr>
+    <tr><th>冻结时间</th><td>{{ batch.created_at }}</td></tr>
+    <tr><th>更新时间</th><td>{{ batch.updated_at }}</td></tr>
+    <tr>
+      <th>下游回执</th>
+      <td>
+        {% if batch.receipt %}
+          <div class="receipt">
+            <div>回执号：<code>{{ batch.receipt.receipt_id }}</code></div>
+            <div>入库时间：{{ batch.receipt.received_at }}</div>
+            <div>下游记录数：{{ batch.receipt.record_count }}</div>
+            <div>幂等返回：{{ '是' if batch.receipt.idempotent else '否（首次入库）' }}</div>
+          </div>
+        {% else %}
+          <span class="muted">尚未取得回执</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <th>失败原因</th>
+      <td>
+        {% if batch.last_error %}
+          <span class="err-text">{{ batch.last_error }}</span>
+        {% else %}
+          <span class="muted">—</span>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <div class="table-actions">
+    {% if batch.status != 'confirmed' %}
+    <form action="{{ url_for('retry_delivery', batch_id=batch.batch_id) }}" method="post" class="inline-form">
+      <button type="submit" class="btn primary">🔁 重试发送（沿用原批次号与原内容）</button>
+    </form>
+    {% else %}
+    <form action="{{ url_for('retry_delivery', batch_id=batch.batch_id) }}" method="post" class="inline-form">
+      <button type="submit" class="btn">幂等重发验证</button>
+    </form>
+    {% endif %}
+    <a class="btn ghost" href="{{ url_for('deliveries') }}">查看下游已收批次</a>
+    <a class="btn ghost" href="{{ url_for('index') }}">← 采集新页面</a>
+  </div>
+  <p class="hint">
+    重试不会重新读取当前页面，也不会生成新批次；发送的是该批次冻结时保存的完整载荷。
+  </p>
+</section>
+
+<section class="card">
+  <h2>冻结载荷预览（前 100 条）</h2>
+  <p class="hint">
+    表头路径：{{ batch.payload.header_paths|length }} 列；
+    发送目标：<code>{{ receiver_url }}</code>
+  </p>
+  <div class="mini-scroll">
+    <table class="result-table">
+      <thead>
+      <tr><th>#</th><th>水库</th><th>表头路径</th><th>原始文本</th><th>来源单元格</th></tr>
+      </thead>
+      <tbody>
+      {% for r in batch.payload.records[:100] %}
+      <tr class="{{ 'empty-val' if not r.value else '' }}">
+        <td>{{ loop.index }}</td>
+        <td>{{ r.reservoir }}</td>
+        <td>{{ r.header_path }}</td>
+        <td>{{ r.value if r.value else '（空）' }}</td>
+        <td><code>{{ r.source_cell or '—' }}</code></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">该批次没有记录。</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if batch.payload.records|length > 100 %}
+  <p class="hint">仅展示前 100 条，完整载荷已冻结在批次中。</p>
+  {% endif %}
+</section>
+{% endblock %}

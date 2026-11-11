@@ -19,6 +19,9 @@ body {
 }
 .brand { color: #fff; text-decoration: none; font-size: 20px; font-weight: 700; }
 .subtitle { font-size: 13px; opacity: .85; }
+.topnav { margin-left: auto; display: flex; gap: 14px; font-size: 14px; }
+.topnav a { color: #eaf3fb; text-decoration: none; border-bottom: 1px solid transparent; }
+.topnav a:hover { border-bottom-color: #eaf3fb; }
 
 .container { max-width: 1080px; margin: 26px auto; padding: 0 18px; }
 
@@ -56,6 +59,8 @@ h3 { color: #1668a8; margin-bottom: 8px; }
 .btn.primary:hover { background: #0f4c81; }
 .btn.ghost { border-color: #9fb3c8; color: #5b6b7f; background: transparent; }
 .btn:hover { opacity: .92; }
+.btn.small { padding: 5px 11px; font-size: 13px; border-radius: 6px; }
+.inline-form { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
 
 .sample-list { list-style: none; padding: 0; margin: 0; }
 .sample-list li {
@@ -123,6 +128,40 @@ h3 { color: #1668a8; margin-bottom: 8px; }
   font-size: 12px; padding: 2px 10px; border-radius: 20px; margin-bottom: 6px;
 }
 .error-box p { margin: 6px 0 0; word-break: break-all; }
+
+/* 批次状态与回执 */
+.badge {
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.badge.confirmed { background: #e3f6e8; color: #1c7a3d; }
+.badge.unconfirmed { background: #fff3d6; color: #9a6400; }
+.badge.rejected { background: #fdecea; color: #b03225; }
+.badge.armed { background: #fff3d6; color: #9a6400; }
+.badge.idle { background: #edf1f5; color: #5b6b7f; }
+
+.notice {
+  border-radius: 8px; padding: 11px 14px; margin: 12px 0;
+  font-size: 14px;
+}
+.notice.ok { background: #e8f7ec; border: 1px solid #b9e3c5; color: #1c6b36; }
+.notice.bad { background: #fdecea; border: 1px solid #f5c6c0; color: #a12c21; }
+
+.reason { white-space: normal; max-width: 420px; }
+.err-text { color: #b03225; word-break: break-all; }
+.ops { white-space: nowrap; }
+.ops .inline-form { margin-left: 6px; }
+.demo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+
+.kv-table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 10px 0; }
+.kv-table th, .kv-table td {
+  border: 1px solid #d7e0ea; padding: 8px 12px; text-align: left;
+  vertical-align: top;
+}
+.kv-table th { width: 150px; background: #f4f8fc; color: #0f4c81; font-weight: 600; }
+.kv-table code { background: #eef3f8; padding: 2px 6px; border-radius: 5px; color: #0f4c81; }
+.kv-table .wrap { word-break: break-all; }
+.receipt { display: grid; gap: 3px; }
 
 .footer {
   text-align: center; color: #8a99ab; font-size: 12px; padding: 18px 0 30px;

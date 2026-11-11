@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}入库发送记录 · 水库公示表格采集{% endblock %}
+{% block body %}
+<section class="card">
+  <h2>入库发送记录</h2>
+  <p class="hint">
+    采集端持久批次存放在 SQLite 中，进程或容器重启后会恢复；
+    未确认批次可直接重试，重试沿用原批次号与原冻结内容。
+    接收服务：<code>{{ receiver_url }}</code>
+  </p>
+
+  {% if demo_notice == 'armed' %}
+  <div class="notice ok">演示开关已开启：下一次<strong>新批次</strong>入库提交成功后，接收端会立即断开连接，采集端将收不到回执。</div>
+  {% elif demo_notice == 'disarmed' %}
+  <div class="notice ok">演示开关已关闭。</div>
+  {% endif %}
+  {% if demo_error_notice %}
+  <div class="notice bad">{{ demo_error_notice }}</div>
+  {% endif %}
+  {% if retry_result is not none %}
+  <div class="notice ok">批量重试完成：{{ retry_result }} 个未确认批次已确认入库。</div>
+  {% endif %}
+
+  <div class="stat-row">
+    <div class="stat"><span class="num">{{ counts.total }}</span><span class="lbl">本地批次数</span></div>
+    <div class="stat"><span class="num">{{ counts.confirmed }}</span><span class="lbl">已确认</span></div>
+    <div class="stat"><span class="num">{{ counts.unconfirmed }}</span><span class="lbl">未确认</span></div>
+    <div class="stat"><span class="num">{{ counts.rejected }}</span><span class="lbl">被拒绝</span></div>
+  </div>
+  {% if counts.unconfirmed %}
+  <div class="notice">
+    检测到 <strong>{{ counts.unconfirmed }}</strong> 个未确认批次（可能是重启前遗留或回执丢失）。
+    <form action="{{ url_for('retry_unconfirmed') }}" method="post" class="inline-form">
+      <button type="submit" class="btn small primary">恢复：重试全部未确认批次</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <h3>采集端批次</h3>
+  <div class="mini-scroll">
+    <table class="result-table">
+      <thead>
+      <tr>
+        <th>批次号</th><th>状态</th><th>记录数</th><th>尝试</th>
+        <th>失败原因 / 回执</th><th>更新时间</th><th>操作</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for b in batches %}
+      <tr>
+        <td><code title="{{ b.batch_id }}">{{ b.batch_id[:22] }}…</code></td>
+        <td><span class="badge {{ b.status }}">{{ status_label(b.status) }}</span></td>
+        <td>{{ b.record_count }}</td>
+        <td>{{ b.attempts }}</td>
+        <td class="reason">
+          {% if b.status == 'confirmed' and b.receipt %}
+            回执 <code>{{ b.receipt.receipt_id }}</code>，下游记录 {{ b.receipt.record_count }} 条
+          {% elif b.last_error %}
+            <span class="err-text">{{ b.last_error }}</span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>{{ b.updated_at }}</td>
+        <td class="ops">
+          <a class="btn small" href="{{ url_for('delivery_detail', batch_id=b.batch_id) }}">详情</a>
+          {% if b.status != 'confirmed' %}
+          <form action="{{ url_for('retry_delivery', batch_id=b.batch_id) }}" method="post" class="inline-form">
+            <button type="submit" class="btn small primary">重试</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">还没有冻结批次。请在转换预览页点击「发送入库」。</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>下游接收端状态</h2>
+  {% if downstream_error %}
+  <div class="notice bad">{{ downstream_error }}</div>
+  {% else %}
+  <div class="stat-row">
+    <div class="stat"><span class="num">{{ downstream.batch_count }}</span><span class="lbl">下游已收批次</span></div>
+    <div class="stat"><span class="num">{{ downstream.record_count }}</span><span class="lbl">下游已收记录</span></div>
+  </div>
+  <div class="mini-scroll">
+    <table class="result-table">
+      <thead>
+      <tr><th>批次号</th><th>记录数</th><th>回执号</th><th>入库时间</th></tr>
+      </thead>
+      <tbody>
+      {% for d in downstream.batches %}
+      <tr>
+        <td><code title="{{ d.batch_id }}">{{ d.batch_id[:22] }}…</code></td>
+        <td>{{ d.record_count }}</td>
+        <td><code>{{ d.receipt_id }}</code></td>
+        <td>{{ d.received_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">下游尚未收到任何批次。</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <h3>演示开关：入库后断开连接（一次性）</h3>
+  <p class="hint">
+    开启后，下一次新批次在接收端<strong>提交事务并落库</strong>之后，服务会直接断开 TCP 连接、
+    不返回回执。采集端保持「未确认」，此时点击重试即可验证幂等：
+    同批次号同内容会取回首次入库的原回执。
+  </p>
+  {% if demo_error %}
+  <div class="notice bad">{{ demo_error }}</div>
+  {% endif %}
+  <div class="demo-row">
+    <span class="badge {{ 'armed' if demo and demo.disconnect_next else 'idle' }}">
+      {% if demo and demo.disconnect_next %}已开启（等待下一次入库）{% else %}未开启{% endif %}
+    </span>
+    {% if demo and demo.disconnect_last_at %}
+    <span class="hint">上次触发：{{ demo.disconnect_last_at }}</span>
+    {% endif %}
+    <form action="{{ url_for('demo_disconnect_next') }}" method="post" class="inline-form">
+      <input type="hidden" name="enabled" value="{{ '0' if demo and demo.disconnect_next else '1' }}">
+      <button type="submit" class="btn small primary">
+        {% if demo and demo.disconnect_next %}关闭开关{% else %}开启一次性开关{% endif %}
+      </button>
+    </form>
+    <a class="btn small ghost" href="{{ receiver_public_url }}/" target="_blank" rel="noopener">打开接收服务页面</a>
+  </div>
+</section>
+{% endblock %}

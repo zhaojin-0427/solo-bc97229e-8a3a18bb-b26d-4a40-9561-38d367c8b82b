@@ -11,7 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-EXPOSE 8000
+# 采集端与接收端各自挂载独立卷到 /app/data
+RUN mkdir -p /app/data
+
+EXPOSE 8000 9000
 
 # 单进程 + 多线程即可满足演示；进程内抓取缓存依赖单 worker
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "8", "--timeout", "60", "app.web:app"]
